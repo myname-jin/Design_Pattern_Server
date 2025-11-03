@@ -1,0 +1,10 @@
+Server\SessionManager.class
+Server\LoginProcessor.class
+Client\UserInfoHandler.class
+Server\ClientHandler.class
+Server\SessionManager$PendingClient.class
+Server\SessionManager$LoginDecision.class
+Client\RegisterHandler.class
+Client\FileSyncManager.class
+Server\ServerMain.class
+Server\ServerView.class

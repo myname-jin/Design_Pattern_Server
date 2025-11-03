@@ -1,0 +1,7 @@
+Client\UserInfoHandlerTest.class
+Server\ServerMainTest.class
+Server\ClientHandlerTest.class
+Server\LoginProcessorTest.class
+Client\RegisterHandlerTest.class
+Server\SessionManagerTest.class
+Client\FileSyncManagerTest.class
