@@ -1,5 +1,4 @@
 Server\SessionManager.class
-Server\LoginProcessor.class
 Client\UserInfoHandler.class
 Server\ClientHandler.class
 Server\SessionManager$PendingClient.class
