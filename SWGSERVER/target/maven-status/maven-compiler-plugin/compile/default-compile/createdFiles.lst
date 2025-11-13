@@ -1,9 +1,12 @@
+Client\PasswordChangeHandler.class
 Server\SessionManager.class
 Client\UserInfoHandler.class
 Server\ClientHandler.class
 Server\SessionManager$PendingClient.class
+Server\LoginAttemptManager.class
 Server\SessionManager$LoginDecision.class
 Client\RegisterHandler.class
 Client\FileSyncManager.class
 Server\ServerMain.class
 Server\ServerView.class
+Server\LoginAttemptManager$InstanceHolder.class

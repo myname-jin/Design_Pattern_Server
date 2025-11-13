@@ -13,6 +13,7 @@ import java.net.*;
 import java.util.*;
 import Server.SessionManager;
 import Server.ClientHandler;
+import Server.LoginAttemptManager; // 1. 임포트 추가
 
 public class ServerMain {
 
@@ -46,6 +47,9 @@ public class ServerMain {
 
         // 세션 매니저 생성 (최대 3명)
         SessionManager sessionManager = new SessionManager(3);
+        
+        // 2. 로그인 시도 관리자 인스턴스 미리 생성 (싱글톤 초기화)
+        LoginAttemptManager loginManager = LoginAttemptManager.getInstance();
 
         // ServerSocket 바인딩 시도
         ServerSocket serverSocket;
@@ -65,7 +69,8 @@ public class ServerMain {
         while (true) {
             try {
                 Socket clientSocket = serverSocket.accept();
-                new Thread(new ClientHandler(clientSocket, sessionManager)).start();
+                // 3. ClientHandler에 loginManager 전달
+                new Thread(new ClientHandler(clientSocket, sessionManager, loginManager)).start();
             } catch (IOException e) {
                 e.printStackTrace();
             }

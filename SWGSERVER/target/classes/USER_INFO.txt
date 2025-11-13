@@ -15,3 +15,5 @@ wlfjddl,wlfjddl,임진호,지렁이,학생
 adsd336@abbcc,dlawlsgh,임진호,컴쏘과,학생
 1,1,1,1,학생
 1,1,1,1,학생
+dlawlsgh,dlawlsgh,임진호,임진호,학생
+1234,1234,12,12,학생

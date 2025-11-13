@@ -12,20 +12,23 @@ import Client.FileSyncManager;
 import java.io.*;
 import java.net.Socket;
 
-import Client.RegisterHandler;     // 서버 쪽 핸들러
-import Client.UserInfoHandler;     // 서버 쪽 핸들러
+import Client.RegisterHandler;
+import Client.UserInfoHandler;
+import Client.PasswordChangeHandler; // 1. 임포트 추가
 
 public class ClientHandler extends Thread {
 
     private final Socket socket;
     private final SessionManager sessionManager;
+    private final LoginAttemptManager loginManager;
     private BufferedReader in;
     private BufferedWriter out;
     private String userId = null;
 
-    public ClientHandler(Socket socket, SessionManager sessionManager) {
+    public ClientHandler(Socket socket, SessionManager sessionManager, LoginAttemptManager loginManager) {
         this.socket = socket;
         this.sessionManager = sessionManager;
+        this.loginManager = loginManager;
         try {
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -38,7 +41,7 @@ public class ClientHandler extends Thread {
     public void run() {
         try {
             String msg;
-            String input = null;
+            // String input = null; // (로그아웃 로직에서 msg로 변경되었으므로 제거 가능)
 
             while ((msg = in.readLine()) != null) {
                 // ─── 회원가입 처리 ───────────────────────────────────
@@ -57,6 +60,7 @@ public class ClientHandler extends Thread {
 
                 // ─── 로그인 처리 ─────────────────────────────────────
                 if (msg.startsWith("LOGIN:")) {
+                    // ... (로그인 잠금 기능이 적용된 로직) ...
                     System.out.println("[서버] 로그인 요청: " + msg);
                     String[] parts = msg.substring("LOGIN:".length()).split(",");
                     if (parts.length < 3) {
@@ -70,15 +74,27 @@ public class ClientHandler extends Thread {
                     String password = parts[1].trim();
                     String role = parts[2].trim();
 
-                    boolean valid = validateLogin(userId, password, role);
-                    System.out.println("[서버] 로그인 검증 결과: " + valid);
-                    if (!valid) {
-                        out.write("FAIL");
+                    if (loginManager.isLocked(userId)) {
+                        out.write("LOGIN_LOCKED");
                         out.newLine();
                         out.flush();
-                        System.out.println("[서버] 응답: FAIL");
+                        System.out.println("[서버] 응답: LOGIN_LOCKED");
                         continue;
                     }
+
+                    boolean valid = validateLogin(userId, password, role);
+                    System.out.println("[서버] 로그인 검증 결과: " + valid);
+                    
+                    if (!valid) {
+                        int count = loginManager.recordFailure(userId);
+                        out.write("FAIL:" + count);
+                        out.newLine();
+                        out.flush();
+                        System.out.println("[서버] 응답: FAIL:" + count);
+                        continue;
+                    }
+
+                    loginManager.recordSuccess(userId);
 
                     if ("admin".equalsIgnoreCase(role)) {
                         out.write("LOGIN_SUCCESS");
@@ -111,6 +127,14 @@ public class ClientHandler extends Thread {
                     }
                     continue;
                 }
+                
+                // 2. [비밀번호 변경 처리] (신규 추가)
+                if (msg.startsWith("PW_CHANGE:")) {
+                    PasswordChangeHandler pwHandler = new PasswordChangeHandler(out);
+                    pwHandler.handle(msg);
+                    continue;
+                }
+                
                 // ─── 텍스트 파일 동기화 처리 ──────────────────────────
                 if (msg.startsWith("FILE_UPDATE:")) {
                     String filename = msg.substring("FILE_UPDATE:".length()).trim();
@@ -131,10 +155,10 @@ public class ClientHandler extends Thread {
                     continue;
                 }
                 // ─── 로그아웃 처리 ────────────────────────────────────
-                if (input.equals("LOGOUT")) {
-        System.out.println("로그아웃 요청 수신: " + userId);
-        sessionManager.logout(userId);  // 세션에서 제거
-        break; // 스레드 종료
+                if (msg.startsWith("LOGOUT:")) {
+                    System.out.println("로그아웃 요청 수신: " + userId);
+                    sessionManager.logout(userId);
+                    break; // 스레드 종료
                 }
             }
         } catch (IOException e) {
