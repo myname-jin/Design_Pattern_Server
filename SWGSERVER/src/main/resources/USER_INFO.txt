@@ -12,3 +12,7 @@
 4,4,4,4,교수
 5,5,5,5,학생
 wlfjddl,wlfjddl,임진호,지렁이,학생
+adsd336@abbcc,dlawlsgh,임진호,컴쏘과,학생
+1,1,1,1,학생
+1,1,1,1,학생
+dlawlsgh,dlawlsgh,임진호,임진호,학생

@@ -8,8 +8,10 @@ package Client;
  *
  * @author adsd3
  */
+import java.io.BufferedReader; // 중복로그인해결
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader; // 중복로그인
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -24,7 +26,7 @@ public class RegisterHandler {
 
     /**
      * 메시지 포맷: "REGISTER:role:id:pw:name:dept"
-     *  - 관리자(admin)인 경우 name, dept는 없어도 됨
+     * - 관리자(admin)인 경우 name, dept는 없어도 됨
      */
     public void handle(String msg) {
         // 디버깅 로그: 작업 디렉토리 및 원본 메시지
@@ -38,32 +40,63 @@ public class RegisterHandler {
             return;
         }
 
-        String role = parts[1].trim();            // 역할
-        String id   = parts[2].trim();            // 아이디
-        String pw   = parts.length > 3 ? parts[3].trim() : "";    // 비번
-        String name = parts.length > 4 ? parts[4].trim() : "";    // 이름
-        String dept = parts.length > 5 ? parts[5].trim() : "";    // 학과
+        String role = parts[1].trim();
+        String id   = parts[2].trim();
+        String pw   = parts.length > 3 ? parts[3].trim() : "";
+        String name = parts.length > 4 ? parts[4].trim() : "";
+        String dept = parts.length > 5 ? parts[5].trim() : "";
 
         boolean success;
         // 2) resources 폴더 보장
         File dir = new File(RESOURCE_DIR);
         if (!dir.exists()) dir.mkdirs();
 
-        // 3) 역할별 파일 쓰기
+        // 3. [중복 ID 검사]
+        File adminLoginFile = new File(dir, "ADMIN_LOGIN.txt");
+        File userLoginFile = new File(dir, "USER_LOGIN.txt");
+        
+        if (isIdDuplicate(id, adminLoginFile, userLoginFile)) {
+            send("REGISTER_FAIL:DUPLICATE_ID"); // 4. 새 응답
+            return;
+        }
+
+        // 5) 역할별 파일 쓰기
         if ("admin".equalsIgnoreCase(role)) {
             // 관리자: ADMIN_LOGIN.txt 에만 저장
-            success = writeLine(new File(dir, "ADMIN_LOGIN.txt"), id + "," + pw);
+            success = writeLine(adminLoginFile, id + "," + pw);
         } else {
             // 학생/교수: USER_LOGIN + USER_INFO
-            boolean a = writeLine(new File(dir, "USER_LOGIN.txt"), id + "," + pw);
+            boolean a = writeLine(userLoginFile, id + "," + pw);
             boolean b = writeLine(new File(dir, "USER_INFO.txt"),
                                   String.join(",", id, pw, name, dept, role));
             success = a && b;
         }
 
-        // 4) 클라이언트에 결과 응답
+        // 6) 클라이언트에 결과 응답
         if (success) send("REGISTER_SUCCESS");
         else        sendFail("FILE_WRITE_ERROR");
+    }
+    
+    /**
+     * 지정된 파일들을 읽어 ID가 중복되는지 확인합니다.
+     */
+    private boolean isIdDuplicate(String id, File... filesToSearch) {
+        for (File file : filesToSearch) {
+            if (!file.exists()) continue;
+            
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    if (parts.length > 0 && parts[0].trim().equals(id)) {
+                        return true; // 중복 발견
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return false; // 중복 없음
     }
 
     /** 한 파일에 한 줄을 append 모드로 쓰고 성공 여부 반환 */
