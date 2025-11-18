@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 C:\Design_Pattern_Server\Design_Pattern_Server\SWGSERVER\src\main\java\Server\SessionManager.java
 C:\Design_Pattern_Server\Design_Pattern_Server\SWGSERVER\src\main\java\Server\ClientHandler.java
 C:\Design_Pattern_Server\Design_Pattern_Server\SWGSERVER\src\main\java\Server\LoginAttemptManager.java
@@ -7,3 +8,13 @@ C:\Design_Pattern_Server\Design_Pattern_Server\SWGSERVER\src\main\java\Client\Fi
 C:\Design_Pattern_Server\Design_Pattern_Server\SWGSERVER\src\main\java\Client\UserInfoHandler.java
 C:\Design_Pattern_Server\Design_Pattern_Server\SWGSERVER\src\main\java\Server\ServerView.java
 C:\Design_Pattern_Server\Design_Pattern_Server\SWGSERVER\src\main\java\Client\PasswordChangeHandler.java
+=======
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Client\FileSyncManager.java
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Server\LoginProcessor.java
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Server\ServerMain.java
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Server\ServerView.java
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Server\SessionManager.java
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Server\ClientHandler.java
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Client\UserInfoHandler.java
+C:\Users\LG\Desktop\디자인 패턴(서버)\Design_Pattern_Server\SWGSERVER\src\main\java\Client\RegisterHandler.java
+>>>>>>> Stashed changes
