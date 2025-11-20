@@ -4,118 +4,73 @@
  */
 package Client;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * "PW_CHANGE:id,oldPw,newPw" 요청을 처리합니다.
- * @author adsd3
- */
 public class PasswordChangeHandler {
-    private static final String RESOURCE_DIR = "src/main/resources";
     private final BufferedWriter out;
+    // ★ 수정됨: member.txt 사용
+    private static final String MEMBER_FILE = "src/main/resources/member.txt";
 
-    public PasswordChangeHandler(BufferedWriter out) {
-        this.out = out;
-    }
+    public PasswordChangeHandler(BufferedWriter out) { this.out = out; }
 
     public void handle(String msg) {
         try {
-            // 1. 프로토콜 파싱 변경 (id,oldPw,newPw)
             String[] parts = msg.substring("PW_CHANGE:".length()).split(",", 3);
-            if (parts.length < 3) {
-                send("PW_CHANGE_FAIL:INVALID_FORMAT");
-                return;
-            }
+            if (parts.length < 3) { send("PW_CHANGE_FAIL:INVALID_FORMAT"); return; }
             
             String userId = parts[0].trim();
             String oldPassword = parts[1].trim();
             String newPassword = parts[2].trim();
 
-            File adminFile = new File(RESOURCE_DIR, "ADMIN_LOGIN.txt");
-            File userFile = new File(RESOURCE_DIR, "USER_LOGIN.txt");
+            File file = new File(MEMBER_FILE);
+            
+            // 변경 로직 수행
+            int result = changePassword(file, userId, oldPassword, newPassword);
 
-            // 2. 두 파일 중 하나에서 ID와 기존 비밀번호를 검증하고 변경
-            int resultAdmin = findAndReplacePassword(adminFile, userId, oldPassword, newPassword);
-            int resultUser = findAndReplacePassword(userFile, userId, oldPassword, newPassword);
+            if (result == 0) send("PW_CHANGE_SUCCESS");
+            else if (result == 2) send("PW_CHANGE_FAIL:WRONG_OLD_PW");
+            else send("PW_CHANGE_FAIL:NO_ID");
 
-            if (resultAdmin == 0 || resultUser == 0) {
-                send("PW_CHANGE_SUCCESS");
-            } else if (resultAdmin == 2 || resultUser == 2) {
-                send("PW_CHANGE_FAIL:WRONG_OLD_PW"); // 3. 기존 비밀번호 오류
-            } else {
-                send("PW_CHANGE_FAIL:NO_ID"); // 4. ID 없음
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            send("PW_CHANGE_FAIL:SERVER_ERROR");
-        }
+        } catch (Exception e) { send("PW_CHANGE_FAIL:SERVER_ERROR"); }
     }
 
-    /**
-     * 파일을 읽어 ID와 기존 PW를 검증하고, 라인을 교체한 뒤, 파일을 덮어씁니다.
-     * @return 0=성공, 1=ID없음, 2=PW틀림
-     */
-    private int findAndReplacePassword(File file, String userId, String oldPassword, String newPassword) throws IOException {
-        if (!file.exists()) return 1; // ID 없음
-
+    private int changePassword(File file, String id, String oldPw, String newPw) throws IOException {
+        if (!file.exists()) return 1;
         List<String> lines = new ArrayList<>();
-        boolean idFound = false;
-        boolean passwordMatch = false;
+        boolean found = false;
+        boolean pwMatch = false;
 
-        // 1. 파일을 읽어 메모리에 저장
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 2 && parts[0].trim().equals(userId)) {
-                    idFound = true;
-                    if (parts[1].trim().equals(oldPassword)) {
-                        // ID와 기존 PW 모두 일치
-                        lines.add(userId + "," + newPassword); // 새 비밀번호로 교체
-                        passwordMatch = true;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                // 포맷: id(0), pw(1), name(2), dept(3), role(4)
+                if (p.length >= 5 && p[0].equals(id)) {
+                    found = true;
+                    if (p[1].equals(oldPw)) {
+                        p[1] = newPw; // 비밀번호 교체
+                        lines.add(String.join(",", p));
+                        pwMatch = true;
                     } else {
-                        // ID는 맞는데 PW가 틀림
-                        lines.add(line); // 원본 라인 유지
+                        lines.add(line); // 비번 틀림 -> 원본 유지
                     }
                 } else {
-                    lines.add(line);
+                    lines.add(line); // 다른 사람 데이터 -> 유지
                 }
             }
         }
 
-        if (!idFound) {
-            return 1; // 이 파일에서 ID를 못 찾음
-        }
-        if (!passwordMatch) {
-            return 2; // ID는 찾았으나 PW가 틀림
-        }
+        if (!found) return 1;
+        if (!pwMatch) return 2;
 
-        // 2. 파일 전체를 덮어쓰기 (성공한 경우에만)
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) { // append=false
-            for (String line : lines) {
-                writer.write(line);
-                writer.newLine();
-            }
+        // 파일 덮어쓰기
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            for (String s : lines) { bw.write(s); bw.newLine(); }
         }
-        
-        return 0; // 성공
+        return 0;
     }
 
-    private void send(String code) {
-        try {
-            out.write(code);
-            out.newLine();
-            out.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    private void send(String s) { try { out.write(s); out.newLine(); out.flush(); } catch (IOException e) {} }
 }

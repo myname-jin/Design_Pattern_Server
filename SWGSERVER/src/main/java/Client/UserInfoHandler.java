@@ -12,49 +12,29 @@ import java.io.*;
 import java.net.Socket;
 
 public class UserInfoHandler {
-
-    private final Socket socket;
     private final BufferedWriter out;
+    public UserInfoHandler(Socket s, BufferedWriter out) { this.out = out; }
 
-    public UserInfoHandler(Socket socket, BufferedWriter out) {
-        this.socket = socket;
-        this.out = out;
-    }
-
-    public void handle(String message) throws IOException {
-        if (!message.startsWith("INFO_REQUEST:")) return;
-
-        String requestedId = message.substring("INFO_REQUEST:".length()).trim();
-
-        File infoFile = new File("src/main/resources/USER_INFO.txt");
-        if (!infoFile.exists()) {
-            out.write("INFO_RESPONSE:NOT_FOUND\n");
-            out.flush();
-            return;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(infoFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 5) {
-                    String studentId = parts[0];
-                    String password = parts[1];
-                    String name = parts[2];
-                    String department = parts[3];
-                    String role = parts[4];
-
-                    if (studentId.equals(requestedId)) {
-                        String response = String.format("INFO_RESPONSE:%s,%s,%s,%s\n", studentId, name, department, role);
-                        out.write(response);
+    public void handle(String msg) throws IOException {
+        String targetId = msg.substring("INFO_REQUEST:".length()).trim();
+        // ★ 수정됨: member.txt 사용
+        File file = new File("src/main/resources/member.txt");
+        
+        if (file.exists()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] p = line.split(",");
+                    // 포맷: id(0), pw(1), name(2), dept(3), role(4)
+                    if (p.length >= 5 && p[0].equals(targetId)) {
+                        // 클라이언트에 보내줄 정보: id, name, dept, role
+                        out.write(String.format("INFO_RESPONSE:%s,%s,%s,%s\n", p[0], p[2], p[3], p[4]));
                         out.flush();
                         return;
                     }
                 }
             }
         }
-
-        out.write("INFO_RESPONSE:NOT_FOUND\n");
-        out.flush();
+        out.write("INFO_RESPONSE:NOT_FOUND\n"); out.flush();
     }
 }

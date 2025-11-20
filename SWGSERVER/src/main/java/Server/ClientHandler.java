@@ -177,21 +177,41 @@ public class ClientHandler extends Thread {
     }
 
     private boolean validateLogin(String userId, String password, String role) {
-        String filePath = role.equalsIgnoreCase("admin")
-                ? "src/main/resources/ADMIN_LOGIN.txt"
-                : "src/main/resources/USER_LOGIN.txt";
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        File file = new File("src/main/resources/member.txt");
+        if (!file.exists()) return false;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length >= 2
-                        && parts[0].trim().equals(userId)
-                        && parts[1].trim().equals(password)) {
-                    return true;
+                // 포맷: id, pw, name, dept, role
+                if (parts.length >= 5) {
+                    String fileId = parts[0].trim();
+                    String filePw = parts[1].trim();
+                    String fileRole = parts[4].trim(); // 여기에 '학생'이 들어있음
+
+                    // 1. 아이디 & 비밀번호 검사
+                    if (fileId.equals(userId) && filePw.equals(password)) {
+                        
+                        // 2. 역할(Role) 검사 (한글/영어 매핑 처리)
+                        if (role.equalsIgnoreCase("admin")) {
+                            // 관리자 로그인 시도: 파일에 'admin' 또는 '관리자'라고 적혀있으면 통과
+                            if (fileRole.equalsIgnoreCase("admin") || fileRole.equals("관리자")) {
+                                return true;
+                            }
+                        } else if (role.equalsIgnoreCase("user")) {
+                            // 사용자 로그인 시도: 파일에 'user', '학생', '교수' 중 하나면 통과
+                            if (fileRole.equalsIgnoreCase("user") || 
+                                fileRole.equals("학생") || 
+                                fileRole.equals("교수")) {
+                                return true;
+                            }
+                        }
+                    }
                 }
             }
         } catch (IOException e) {
-            System.out.println("[서버] 로그인 검증 오류: " + e.getMessage());
+            System.out.println("로그인 검증 오류: " + e.getMessage());
         }
         return false;
     }

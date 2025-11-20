@@ -8,34 +8,21 @@ package Client;
  *
  * @author adsd3
  */
-import java.io.BufferedReader; // 중복로그인해결
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader; // 중복로그인
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 
 public class RegisterHandler {
-    // resources 폴더 기준 상대 경로
-    private static final String RESOURCE_DIR = "src/main/resources";
     private final BufferedWriter out;
+    // ★ 수정됨: 파일명이 소문자 'member.txt'로 변경됨
+    private static final String MEMBER_FILE = "src/main/resources/member.txt";
 
     public RegisterHandler(BufferedWriter out) {
         this.out = out;
     }
 
-    /**
-     * 메시지 포맷: "REGISTER:role:id:pw:name:dept"
-     * - 관리자(admin)인 경우 name, dept는 없어도 됨
-     */
     public void handle(String msg) {
-        // 디버깅 로그: 작업 디렉토리 및 원본 메시지
-        System.out.println("Working dir: " + new File(".").getAbsolutePath());
-        System.out.println("회원가입 요청: " + msg);
-
-        // 1) 콜론으로 파싱
+        // msg 구조: "REGISTER:role:id:pw:name:dept"
         String[] parts = msg.split(":", 6);
-        if (parts.length < 3 || !"REGISTER".equals(parts[0])) {
+        if (parts.length < 3) {
             sendFail("INVALID_FORMAT");
             return;
         }
@@ -46,84 +33,51 @@ public class RegisterHandler {
         String name = parts.length > 4 ? parts[4].trim() : "";
         String dept = parts.length > 5 ? parts[5].trim() : "";
 
-        boolean success;
-        // 2) resources 폴더 보장
-        File dir = new File(RESOURCE_DIR);
-        if (!dir.exists()) dir.mkdirs();
+        File file = new File(MEMBER_FILE);
+        if (file.getParentFile() != null && !file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
 
-        // 3. [중복 ID 검사]
-        File adminLoginFile = new File(dir, "ADMIN_LOGIN.txt");
-        File userLoginFile = new File(dir, "USER_LOGIN.txt");
-        
-        if (isIdDuplicate(id, adminLoginFile, userLoginFile)) {
-            send("REGISTER_FAIL:DUPLICATE_ID"); // 4. 새 응답
+        // 1. 중복 ID 검사 (member.txt 하나만 뒤지면 됨)
+        if (isIdDuplicate(id, file)) {
+            send("REGISTER_FAIL:DUPLICATE_ID");
             return;
         }
 
-        // 5) 역할별 파일 쓰기
-        if ("admin".equalsIgnoreCase(role)) {
-            // 관리자: ADMIN_LOGIN.txt 에만 저장
-            success = writeLine(adminLoginFile, id + "," + pw);
+        // 2. 파일 쓰기 (형식: id,pw,name,dept,role)
+        String line = String.join(",", id, pw, name, dept, role);
+        
+        if (writeLine(file, line)) {
+            send("REGISTER_SUCCESS");
         } else {
-            // 학생/교수: USER_LOGIN + USER_INFO
-            boolean a = writeLine(userLoginFile, id + "," + pw);
-            boolean b = writeLine(new File(dir, "USER_INFO.txt"),
-                                  String.join(",", id, pw, name, dept, role));
-            success = a && b;
+            sendFail("FILE_WRITE_ERROR");
         }
-
-        // 6) 클라이언트에 결과 응답
-        if (success) send("REGISTER_SUCCESS");
-        else        sendFail("FILE_WRITE_ERROR");
     }
-    
-    /**
-     * 지정된 파일들을 읽어 ID가 중복되는지 확인합니다.
-     */
-    private boolean isIdDuplicate(String id, File... filesToSearch) {
-        for (File file : filesToSearch) {
-            if (!file.exists()) continue;
-            
-            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split(",");
-                    if (parts.length > 0 && parts[0].trim().equals(id)) {
-                        return true; // 중복 발견
-                    }
+
+    private boolean isIdDuplicate(String id, File file) {
+        if (!file.exists()) return false;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length > 0 && parts[0].trim().equals(id)) {
+                    return true;
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        }
-        return false; // 중복 없음
+        } catch (IOException e) { e.printStackTrace(); }
+        return false;
     }
 
-    /** 한 파일에 한 줄을 append 모드로 쓰고 성공 여부 반환 */
     private boolean writeLine(File file, String line) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
             bw.write(line);
             bw.newLine();
             return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
+        } catch (IOException e) { e.printStackTrace(); return false; }
     }
 
-    /** 성공 코드만 전송 */
     private void send(String code) {
-        try {
-            out.write(code);
-            out.newLine();
-            out.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        try { out.write(code); out.newLine(); out.flush(); } catch (IOException e) {}
     }
-
-    /** 실패 코드와 이유 전송 */
-    private void sendFail(String reason) {
-        send("REGISTER_FAIL:" + reason);
-    }
+    private void sendFail(String reason) { send("REGISTER_FAIL:" + reason); }
 }
