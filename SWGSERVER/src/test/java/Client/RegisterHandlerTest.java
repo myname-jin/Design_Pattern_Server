@@ -7,88 +7,94 @@ package Client;
 import org.junit.jupiter.api.*;
 import java.io.*;
 import java.nio.file.Files;
-import java.util.List;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class RegisterHandlerTest {
-    private static final String RESOURCE_DIR = "src/main/resources";
-    private BufferedWriter out;
-    private ByteArrayOutputStream baos;
+
+    private static final String FILE_PATH = "src/main/resources/member.txt";
+    private StringWriter stringWriter;
+    private BufferedWriter bufferedWriter;
     private RegisterHandler handler;
 
     @BeforeEach
     void setUp() throws IOException {
-        // 리소스 폴더 준비
-        File dir = new File(RESOURCE_DIR);
-        if (!dir.exists()) dir.mkdirs();
-
-        // out 스트림과 handler 초기화
-        baos = new ByteArrayOutputStream();
-        out  = new BufferedWriter(new OutputStreamWriter(baos));
-        handler = new RegisterHandler(out);
+        // 테스트 전 기존 파일 삭제 및 초기화
+        Files.deleteIfExists(Paths.get(FILE_PATH));
+        
+        // Mocking BufferedWriter using StringWriter
+        stringWriter = new StringWriter();
+        bufferedWriter = new BufferedWriter(stringWriter);
+        handler = new RegisterHandler(bufferedWriter);
     }
 
     @AfterEach
-    void tearDown() {
-        // 테스트에서 생성된 파일 삭제
-        deleteQuietly("ADMIN_LOGIN.txt");
-        deleteQuietly("USER_LOGIN.txt");
-        deleteQuietly("USER_INFO.txt");
+    void tearDown() throws IOException {
+        // 테스트 후 파일 정리
+        Files.deleteIfExists(Paths.get(FILE_PATH));
     }
 
     @Test
     void testAdminRegistration() throws IOException {
-        // 관리자 등록 메시지
-        handler.handle("REGISTER:admin:john:pass");
-        out.flush();
+        // Given: 관리자 등록 메시지 (형식: REGISTER:role:id:pw:name:dept)
+        String msg = "REGISTER:Admin:admin1:1234:AdminName:Management";
 
-        // 응답 확인
-        String resp = baos.toString().trim();
-        assertEquals("REGISTER_SUCCESS", resp);
+        // When
+        handler.handle(msg);
 
-        // ADMIN_LOGIN.txt에 기록되었는지 확인
-        File adminFile = new File(RESOURCE_DIR, "ADMIN_LOGIN.txt");
-        assertTrue(adminFile.exists(), "ADMIN_LOGIN.txt가 생성되어야 합니다.");
-        List<String> lines = Files.readAllLines(adminFile.toPath());
-        assertTrue(lines.contains("john,pass"));
+        // Then: 1. 응답 메시지 확인
+        bufferedWriter.flush();
+        assertTrue(stringWriter.toString().contains("REGISTER_SUCCESS"));
+
+        // Then: 2. 파일 생성 및 내용 확인 (member.txt에 저장되었는지)
+        File file = new File(FILE_PATH);
+        assertTrue(file.exists(), "member.txt 파일이 생성되어야 합니다.");
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line = br.readLine();
+            assertNotNull(line);
+            // 저장 포맷: id,pw,name,dept,role
+            assertEquals("admin1,1234,AdminName,Management,Admin", line);
+        }
     }
 
     @Test
     void testUserRegistration() throws IOException {
-        // 학생(또는 교수) 등록 메시지
-        handler.handle("REGISTER:학생:jane:pwd:Jane Doe:CS");
-        out.flush();
+        // Given: 일반 유저 등록 메시지
+        String msg = "REGISTER:Student:user1:1234:UserName:CSE";
 
-        // 응답 확인
-        String resp = baos.toString().trim();
-        assertEquals("REGISTER_SUCCESS", resp);
+        // When
+        handler.handle(msg);
 
-        // USER_LOGIN.txt에 기록
-        File loginFile = new File(RESOURCE_DIR, "USER_LOGIN.txt");
-        assertTrue(loginFile.exists(), "USER_LOGIN.txt가 생성되어야 합니다.");
-        List<String> loginLines = Files.readAllLines(loginFile.toPath());
-        assertTrue(loginLines.contains("jane,pwd"));
+        // Then
+        bufferedWriter.flush();
+        assertTrue(stringWriter.toString().contains("REGISTER_SUCCESS"));
 
-        // USER_INFO.txt에 기록
-        File infoFile = new File(RESOURCE_DIR, "USER_INFO.txt");
-        assertTrue(infoFile.exists(), "USER_INFO.txt가 생성되어야 합니다.");
-        List<String> infoLines = Files.readAllLines(infoFile.toPath());
-        assertTrue(infoLines.contains("jane,pwd,Jane Doe,CS,학생"));
+        File file = new File(FILE_PATH);
+        assertTrue(file.exists(), "member.txt 파일이 생성되어야 합니다.");
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line = br.readLine();
+            // 저장 포맷: id,pw,name,dept,role
+            assertEquals("user1,1234,UserName,CSE,Student", line);
+        }
     }
 
     @Test
-    void testInvalidFormat() throws IOException {
-        handler.handle("BAD_FORMAT");
-        out.flush();
+    void testDuplicateId() throws IOException {
+        // Given: 이미 존재하는 ID 파일 생성
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
+            bw.write("existingUser,1234,OldName,Dept,Student");
+            bw.newLine();
+        }
 
-        String resp = baos.toString().trim();
-        assertTrue(resp.startsWith("REGISTER_FAIL:"), "INVALID_FORMAT 에러를 반환해야 합니다.");
-    }
+        // When: 같은 ID로 가입 시도
+        String msg = "REGISTER:Student:existingUser:9999:NewName:NewDept";
+        handler.handle(msg);
 
-    // 파일 삭제 헬퍼
-    private void deleteQuietly(String fileName) {
-        File f = new File(RESOURCE_DIR, fileName);
-        if (f.exists()) f.delete();
+        // Then: 실패 메시지 확인
+        bufferedWriter.flush();
+        assertTrue(stringWriter.toString().contains("REGISTER_FAIL:DUPLICATE_ID"));
     }
 }
