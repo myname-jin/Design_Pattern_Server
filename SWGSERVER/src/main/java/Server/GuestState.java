@@ -52,7 +52,11 @@ public class GuestState implements ClientState {
         regHandler.handle(msg);
     }
 
-    private void handleLogin(ClientHandler context, String msg, BufferedReader in, BufferedWriter out) throws IOException {
+    private void handleLogin(ClientHandler context, String msg, 
+            BufferedReader in, BufferedWriter out) throws IOException {
+       
+        
+        
         System.out.println("[GuestState] 로그인 시도: " + msg);
         String[] parts = msg.substring("LOGIN:".length()).split(",");
 

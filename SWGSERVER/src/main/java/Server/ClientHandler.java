@@ -52,7 +52,6 @@ public class ClientHandler extends Thread {
         try {
             String msg;
             while ((msg = in.readLine()) != null) {
-                // [핵심] if-else 제거됨! 현재 상태에게 처리 위임
                 state.process(this, msg, in, out);
             }
         } catch (IOException e) {

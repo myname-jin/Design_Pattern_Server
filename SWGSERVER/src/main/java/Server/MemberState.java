@@ -72,12 +72,12 @@ public class MemberState implements ClientState {
         System.out.println("[MemberState] 파일 동기화 완료: " + filename);
     }
 
-    private void handleLogout(ClientHandler context, String msg, BufferedReader in, BufferedWriter out) throws IOException {
+    private void handleLogout(ClientHandler context, String msg, 
+            BufferedReader in, BufferedWriter out) throws IOException {
         String userId = context.getUserId();
         System.out.println("[MemberState] 로그아웃 요청: " + userId);
         context.getSessionManager().logout(userId);
 
-        // ★ [핵심] 상태 전환 (Member -> Guest)
         context.setUserId(null);
         context.setState(new GuestState());
         System.out.println("[State] 로그아웃 -> GuestState 전환");
