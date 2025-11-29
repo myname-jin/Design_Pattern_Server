@@ -28,7 +28,8 @@ public class MemberState implements ClientState {
         commandMap.put("FILE_UPDATE:", this::handleFileUpdate);
         commandMap.put("LOGOUT:", this::handleLogout);
         
-  
+        commandMap.put("LOGIN:", this::handleReject);
+        commandMap.put("REGISTER:", this::handleReject);
     }
 
     @FunctionalInterface
@@ -80,7 +81,11 @@ public class MemberState implements ClientState {
         context.setState(new GuestState());
         System.out.println("[State] 로그아웃 -> GuestState 전환");
     }
-
+    private void handleReject(ClientHandler context, String msg, BufferedReader in, BufferedWriter out) throws IOException {
+    out.write("ALREADY_LOGGED_IN");
+    out.newLine();
+    out.flush();
+}
     private String getHeader(String msg) {
         int idx = msg.indexOf(":");
         if (idx != -1) return msg.substring(0, idx + 1);
