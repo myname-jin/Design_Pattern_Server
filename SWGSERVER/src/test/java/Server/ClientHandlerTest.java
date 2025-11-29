@@ -36,10 +36,7 @@ public class ClientHandlerTest {
 
         serverSideSocket = serverSocket.accept();
 
-        // ---------------------------------------------------------------
-        // [1] SessionManager Mock (가짜)
-        // -> 얘는 생성자가 public이라서 가짜를 만들 수 있습니다.
-        // ---------------------------------------------------------------
+       
         SessionManager mockSessionManager = new SessionManager(100) { 
             @Override
             public LoginDecision tryLogin(String userId, PendingClient client) {
@@ -50,16 +47,10 @@ public class ClientHandlerTest {
             }
         };
 
-        // ---------------------------------------------------------------
-        // [2] LoginAttemptManager Real (진짜) - 여기가 수정됨! ⭐
-        // -> 싱글톤(Private 생성자)이라서 상속이 불가능하므로, 진짜를 가져다 씁니다.
-        // -> 어차피 "testUser"는 처음 로그인하는 거라 잠겨있지 않으므로 테스트에 문제 없습니다.
-        // ---------------------------------------------------------------
+      
         LoginAttemptManager realLoginManager = LoginAttemptManager.getInstance();
 
-        // ---------------------------------------------------------------
-        // [3] ClientHandler 생성
-        // ---------------------------------------------------------------
+        
         handler = new ClientHandler(serverSideSocket, mockSessionManager, realLoginManager) {
             @Override
             public boolean validateLogin(String userId, String password, String role) {
@@ -78,7 +69,6 @@ public class ClientHandlerTest {
         if (serverSocket != null) serverSocket.close();
     }
 
-    // --- [테스트 케이스] ---
 
     @Test
     public void testGuestStateBlocksFileUpdate() throws IOException {
