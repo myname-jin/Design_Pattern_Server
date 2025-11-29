@@ -28,9 +28,7 @@ public class MemberState implements ClientState {
         commandMap.put("FILE_UPDATE:", this::handleFileUpdate);
         commandMap.put("LOGOUT:", this::handleLogout);
         
-        // [차단 명령] 이미 로그인된 상태임
-        commandMap.put("LOGIN:", this::handleAlreadyLoggedIn);
-        commandMap.put("REGISTER:", this::handleAlreadyLoggedIn);
+  
     }
 
     @FunctionalInterface
@@ -81,12 +79,6 @@ public class MemberState implements ClientState {
         context.setUserId(null);
         context.setState(new GuestState());
         System.out.println("[State] 로그아웃 -> GuestState 전환");
-    }
-
-    private void handleAlreadyLoggedIn(ClientHandler context, String msg, BufferedReader in, BufferedWriter out) throws IOException {
-        out.write("ALREADY_LOGGED_IN");
-        out.newLine();
-        out.flush();
     }
 
     private String getHeader(String msg) {

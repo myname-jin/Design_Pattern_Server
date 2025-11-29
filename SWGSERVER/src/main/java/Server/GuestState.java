@@ -14,6 +14,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import Client.PasswordChangeHandler;
 
 public class GuestState implements ClientState {
 
@@ -23,6 +24,8 @@ public class GuestState implements ClientState {
         // [허용 명령]
         commandMap.put("REGISTER:", this::handleRegister);
         commandMap.put("LOGIN:", this::handleLogin);
+        commandMap.put("PW_CHANGE:", this::handlePwChange);
+       
     }
 
     @FunctionalInterface
@@ -51,7 +54,10 @@ public class GuestState implements ClientState {
         RegisterHandler regHandler = new RegisterHandler(out);
         regHandler.handle(msg);
     }
-
+    private void handlePwChange(ClientHandler context, String msg, BufferedReader in, BufferedWriter out) throws IOException {
+    System.out.println("[GuestState] 비밀번호 변경 요청 수신");
+    new PasswordChangeHandler(out).handle(msg);
+    }
     private void handleLogin(ClientHandler context, String msg, 
             BufferedReader in, BufferedWriter out) throws IOException {
        
