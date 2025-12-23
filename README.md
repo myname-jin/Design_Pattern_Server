@@ -2,9 +2,11 @@
 
 ## 📖 Project Overview
 이 프로젝트는 기존의 절차지향적으로 작성된 강의실 예약 시스템을 **객체지향 설계 원칙(SOLID)**과 **GOF 디자인 패턴**을 적용하여 리팩토링한 결과물입니다.
-**Java Socket 통신**을 기반으로 한 **C/S(Client-Server) 아키텍처**를 따르며, 본 레포지토리는 비즈니스 로직과 데이터 처리를 담당하는 **Server** 소스 코드를 포함하고 있습니다.
+Java Socket 통신**을 기반으로 한 C/S(Client-Server) 아키텍처**를 따르며, 본 레포지토리는 비즈니스 로직과 데이터 처리를 담당하는 **Server** 소스 코드를 포함하고 있습니다.
 
+[📄 **프로젝트 결과보고서(전공설계) 보기**](./OOM-3.프로젝트결과보고서(전공설계)-2분반-2조.pdf)
 
+[📄 **실행영상 보기**](https://www.youtube.com/watch?v=4T6IS4JgeU0)
 ---
 
 ## 🔗 Client Repository
@@ -60,6 +62,8 @@
     1. 10개의 스레드를 동시에 생성하여 각자 `CommandProcessor.getInstance()`를 호출.
     2. 각 스레드가 획득한 인스턴스의 **HashCode(메모리 주소)**를 출력.
     3. 모든 스레드 종료 후(`join`), 최종적으로 `Assertions.assertTrue`를 통해 무결성 검증.
+
+![통합테스트 결과](./싱글톤패턴통합테스트.jpg)
 
 <details>
 <summary><b>👉 테스트 코드(Test Code) 보기 (Click)</b></summary>
