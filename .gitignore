@@ -1,0 +1,7 @@
+/SWGSERVER/nbproject/
+/SWGSERVER/target/
+/target/
+*.class
+.idea/
+*.iml
+.vscode/
